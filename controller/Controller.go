@@ -24,15 +24,11 @@ import (
 
 	"github.com/RestApiMgo/employee"
 	"github.com/RestApiMgo/mongocon"
-	"github.com/TestGit/RestApiMgo/propparser"
+	"github.com/RestApiMgo/propparser"
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"gopkg.in/mgo.v2"
 )
-
-//Connect to DB
-var config = propparser.ReadConfig()
-var session = mongocon.Connect(config.ConnectionString)
 
 // Index
 var index = mgo.Index{
@@ -44,9 +40,66 @@ var index = mgo.Index{
 }
 
 // Collection Employee
-var c = session.DB(config.Database).C(config.Collection)
+var c *mgo.Collection
 
-var err = c.EnsureIndex(index)
+// findByEmpID looks up one employee by empid; replaced in tests
+var findByEmpID = func(empid string) (employee.Employee, error) {
+	result := employee.Employee{}
+	err := c.Find(bson.M{"empid": empid}).One(&result)
+	return result, err
+}
+
+//Init connects to DB and prepares the collection
+func Init() {
+	config := propparser.ReadConfig()
+	session := mongocon.Connect(config.ConnectionString)
+	c = session.DB(config.Database).C(config.Collection)
+	if err := c.EnsureIndex(index); err != nil {
+		panic(err)
+	}
+}
+
+// swagger:operation QUERY /search/{empid} Employee searchEmployee
+//
+// Search Employee
+//
+// Returns the whole Employee record matching empid. Only the HTTP QUERY method is supported.
+//
+// ---
+// produces:
+// - application/json
+// parameters:
+//  - name: empid
+//    type: string
+//    in: path
+//    required: true
+// responses:
+//   '200':
+//     description: employee data
+//     schema:
+//      "$ref": "#/definitions/Employee"
+//   '404':
+//     description: Employee not found
+//   '405':
+//     description: Method Not Allowed, likely url is not correct
+
+//SearchEmployee fetch emp from db by empid
+func SearchEmployee(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	result, err := findByEmpID(mux.Vars(r)["empid"])
+	if err == mgo.ErrNotFound {
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(map[string]string{"error": "employee not found"})
+		return
+	}
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]string{"error": "internal error"})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(result)
+}
 
 // swagger:operation GET /Employees Employee getAllEmployee
 //

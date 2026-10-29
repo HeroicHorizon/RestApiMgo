@@ -7,6 +7,7 @@ import (
 // Employee employeestruct
 // swagger:model
 type Employee struct {
+	EmpID       string    `json:"empid" bson:"empid"`
 	FName       string    `json:"fname"`
 	LName       string    `json:"lname"`
 	Designation string    `json:"designation"`

@@ -172,6 +172,41 @@
         }
       }
     },
+    "/search/{empid}": {
+      "x-query": {
+        "description": "Returns the whole Employee record matching empid. Only the HTTP QUERY method is supported (Swagger 2.0 has no query verb; GET is not routed).",
+        "produces": [
+          "application/json"
+        ],
+        "tags": [
+          "Employee"
+        ],
+        "summary": "Search Employee",
+        "operationId": "searchEmployee",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "empid",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "employee data",
+            "schema": {
+              "$ref": "#/definitions/Employee"
+            }
+          },
+          "404": {
+            "description": "Employee not found"
+          },
+          "405": {
+            "description": "Method Not Allowed, likely url is not correct"
+          }
+        }
+      }
+    },
     "/deleteEmployee/{fname}": {
       "delete": {
         "description": "Delete existing Employee filtered by fname",
@@ -216,6 +251,10 @@
         "designation": {
           "type": "string",
           "x-go-name": "Designation"
+        },
+        "empid": {
+          "type": "string",
+          "x-go-name": "EmpID"
         },
         "fname": {
           "type": "string",
